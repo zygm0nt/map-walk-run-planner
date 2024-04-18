@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Walking Route Planner</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <style>
+    #map {
+      height: 800px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Walking Route Planner</h1>
+  <div id="map"></div>
+  <div>
+    <label for="distance">Desired Walking Distance (in meters):</label>
+    <input type="number" id="distance" value="1000">
+    <button onclick="calculateRoute()">Calculate Route</button>
+  </div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <script>
+    var map = L.map('map').setView([51.505, -0.09], 13); // Initial view
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var startPoint = [51.505, -0.09]; // Default start point
+    var routingControl;
+
+   // Function to generate random endpoint within a specified radius from the starting point
+	function generateRandomEndpoint(startPoint, radius) {
+	  // Convert latitude and longitude from degrees to radians
+	  var lat = startPoint[0] * Math.PI / 180;
+	  var lon = startPoint[1] * Math.PI / 180;
+
+	  // Radius of the Earth in meters
+	  var R = 6371000; 
+
+	  // Generate random distance and angle within the specified radius
+	  var randomDistance = Math.random() * radius; // Random distance in meters
+	  var randomAngle = Math.random() * 2 * Math.PI; // Random angle in radians
+
+	  // Calculate new latitude and longitude for the endpoint
+	  var newLat = Math.asin(Math.sin(lat) * Math.cos(randomDistance / R) +
+			Math.cos(lat) * Math.sin(randomDistance / R) * Math.cos(randomAngle));
+	  var newLon = lon + Math.atan2(Math.sin(randomAngle) * Math.sin(randomDistance / R) * Math.cos(lat),
+				Math.cos(randomDistance / R) - Math.sin(lat) * Math.sin(newLat));
+
+	  // Convert back to degrees
+	  newLat = newLat * 180 / Math.PI;
+	  newLon = newLon * 180 / Math.PI;
+
+	  return [newLat, newLon];
+	}
+
+
+    function calculateRoute() {
+      var desiredDistance = parseInt(document.getElementById('distance').value);
+      // var endPoint = startPoint; // For demo purpose, setting end point same as start point
+      var endPoint = generateRandomEndpoint(startPoint, desiredDistance / 2); // Generate random endpoint
+
+
+      // Remove existing route if any
+      if (routingControl) {
+        routingControl.removeFrom(map);
+      }
+
+      // Calculate route using Leaflet Routing Machine
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(startPoint),
+          L.latLng(endPoint)
+        ],
+        routeWhileDragging: true, // Allow dragging route to recalculate
+        //router: L.Routing.osrm() // You can use other routers as well
+      }).addTo(map);
+
+      L.Routing.control({
+        waypoints: [
+          L.latLng(endPoint),
+          L.latLng(startPoint)
+        ],
+        routeWhileDragging: true, // Allow dragging route to recalculate
+      }).addTo(map);
+
+      // Fit the map to the route bounds
+      map.fitBounds([startPoint, endPoint]);
+    }
+  </script>
+</body>
+</html>
+
